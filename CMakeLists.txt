@@ -1,4 +1,10 @@
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/glslang_dep)
+# Nalco's soup :
+#
+# Fixes :
+# 06/07/2025 : wrongly used CMAKE_CURRENT_SOURCE_DIR instead of CMAKE_CURRENT_LIST_DIR
+#
+#
+
 cmake_minimum_required(VERSION 3.30)
 
 message("Working through VkFFT wrapper module")
@@ -11,8 +17,8 @@ endif ()
 
 find_package(glslang CONFIG REQUIRED)
 
-set(FILE_CHECK "${CMAKE_CURRENT_SOURCE_DIR}/external/vkFFT/vkFFT.h")
-message(STATUS "Running vkfft configure.sh...")
+
+message(STATUS "Running VkFFT's configure.sh...")
 execute_process(
         COMMAND bash "${CMAKE_CURRENT_LIST_DIR}/configure.sh"
         WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
@@ -24,30 +30,27 @@ endif ()
 
 
 if (NOT DEFINED VKFFT_DIM)
-    set(VKFFT_BACKEND "2")# don't need more than 2D by default
+    set(VKFFT_DIM "2" CACHE STRING "Max FFT dimensions")
 endif ()
 
 if (NOT DEFINED VKFFT_BACKEND)
-    set(VKFFT_BACKEND "0") #0 = vulkan
+    set(VKFFT_BACKEND "0" CACHE STRING "VkFFT's Backend : 0-Vulkan")
 endif ()
 
 set(ENABLE_OPT 0)
 
-add_definitions(-DVKFFT_MAX_FFT_DIMENSIONS=${VKFFT_DIM})
-add_definitions(-DVKFFT_BACKEND=${VKFFT_BACKEND})
+add_library(VkFFT INTERFACE)
 
-
-add_library(VKFFT INTERFACE)
-
-target_include_directories(VKFFT
-        #PUBLIC
-        #${CMAKE_CURRENT_SOURCE_DIR}
-        #${CMAKE_CURRENT_SOURCE_DIR}/external/VkFFT/VkFFT/vkFFT_Structs
-        INTERFACE #PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/VkFFT/
+target_include_directories(VkFFT INTERFACE
+        ${CMAKE_CURRENT_LIST_DIR}/external/VkFFT/
 )
 
-target_link_libraries(VKFFT
+target_compile_definitions(VkFFT INTERFACE
+        VKFFT_MAX_FFT_DIMENSIONS=${VKFFT_DIM}
+        VKFFT_BACKEND=${VKFFT_BACKEND}
+)
+
+target_link_libraries(VkFFT
         INTERFACE
         glslang::SPIRV
         glslang::glslang
